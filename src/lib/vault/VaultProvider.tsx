@@ -3,7 +3,6 @@ import { deriveKey, fromB64, openJson, parseVaultFile, PBKDF2_ITERATIONS, random
 import { createVaultData, nameSchema, vaultDataSchema, type VaultData } from "./schema";
 import { clearVaultFile, downloadFile, hasVault, readVaultFile, writeVaultFile } from "./storage";
 import { EMPTY_LOCKOUT, readLockout, registerFailure, remainingLockMs, writeLockout, type LockoutState } from "@/lib/security/lockout";
-import { evaluatePassword } from "@/lib/security/password";
 import { dayKey } from "@/lib/stats";
 
 export type VaultStatus = "loading" | "empty" | "locked" | "unlocked";
@@ -24,6 +23,8 @@ interface VaultValue {
   update: (fn: (d: VaultData) => VaultData) => void;
   exportBackup: () => Promise<void>;
   importBackup: (file: File) => Promise<{ ok: true } | { ok: false; error: string }>;
+  /** Re-encrypt the vault under a new passphrase (fresh salt). */
+  rekey: (passphrase: string) => Promise<void>;
   destroy: () => void;
   setBusy: (busy: boolean) => void;
 }
@@ -35,7 +36,7 @@ const MAX_IMPORT_BYTES = 8 * 1024 * 1024;
  * Holds the unlocked vault session. The derived key lives only in a ref (memory)
  * and is dropped on lock; the passphrase is never kept after derivation.
  */
-export function VaultProvider({ children }: { children: ReactNode }) {
+export function VaultProvider({ userId, children }: { userId: string; children: ReactNode }) {
   const [status, setStatus] = useState<VaultStatus>("loading");
   const [data, setData] = useState<VaultData | null>(null);
   const [lockout, setLockout] = useState<LockoutState>(EMPTY_LOCKOUT);
@@ -54,8 +55,8 @@ export function VaultProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setLockout(readLockout());
-    setStatus(hasVault() ? "locked" : "empty");
-  }, []);
+    setStatus(hasVault(userId) ? "locked" : "empty");
+  }, [userId]);
 
   const persist = useCallback((d: VaultData) => {
     const key = keyRef.current;
@@ -65,14 +66,14 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     chain.current = chain.current
       .then(async () => {
         const file = await sealJson(key, salt, iterations, d);
-        writeVaultFile(file);
+        writeVaultFile(userId, file);
         setLastWrite(file.updatedAt);
       })
       .catch(() => {
         console.error("ZenFlow: écriture du coffre impossible (stockage plein ou indisponible).");
       });
     return chain.current;
-  }, []);
+  }, [userId]);
 
   // Debounced encrypted write after every change.
   useEffect(() => {
@@ -118,21 +119,21 @@ export function VaultProvider({ children }: { children: ReactNode }) {
 
   const create = useCallback(
     async (name: string, passphrase: string) => {
-      const cleanName = nameSchema.parse(name);
-      if (!evaluatePassword(passphrase, [cleanName]).ok) throw new Error("Phrase secrète trop faible");
+      const parsedName = nameSchema.safeParse(name);
+      const cleanName = parsedName.success ? parsedName.data : "Ami·e";
       const salt = randomSalt();
       const key = await deriveKey(passphrase, salt, PBKDF2_ITERATIONS);
       const now = Date.now();
       const d = { ...createVaultData(cleanName, now), lastUnlock: now };
       const file = await sealJson(key, salt, PBKDF2_ITERATIONS, d);
-      writeVaultFile(file);
+      writeVaultFile(userId, file);
       setLastWrite(file.updatedAt);
       writeLockout(EMPTY_LOCKOUT);
       setLockout(EMPTY_LOCKOUT);
       setPreviousUnlock(null);
       start(key, salt, PBKDF2_ITERATIONS, d);
     },
-    [start],
+    [start, userId],
   );
 
   const unlock = useCallback(
@@ -143,7 +144,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
         return { ok: false, retryAt: current.lockedUntil };
       }
       try {
-        const file = readVaultFile();
+        const file = readVaultFile(userId);
         if (!file) throw new Error("invalid");
         const salt = fromB64(file.kdf.salt);
         const key = await deriveKey(passphrase, salt, file.kdf.iterations);
@@ -161,7 +162,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
         return { ok: false, retryAt: next.lockedUntil || null };
       }
     },
-    [start],
+    [start, userId],
   );
 
   const update = useCallback((fn: (d: VaultData) => VaultData) => {
@@ -171,10 +172,27 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   const exportBackup = useCallback(async () => {
     if (dataRef.current) await persist(dataRef.current);
     await chain.current;
-    const file = readVaultFile();
+    const file = readVaultFile(userId);
     if (!file) throw new Error("Aucun coffre");
     downloadFile(`zenflow-sauvegarde-${dayKey(Date.now())}.zenflow`, JSON.stringify(file), "application/json");
-  }, [persist]);
+  }, [persist, userId]);
+
+  const rekey = useCallback(
+    async (passphrase: string) => {
+      const d = dataRef.current;
+      if (!d || !keyRef.current) throw new Error("Coffre verrouillé");
+      await chain.current;
+      const salt = randomSalt();
+      const key = await deriveKey(passphrase, salt, PBKDF2_ITERATIONS);
+      const file = await sealJson(key, salt, PBKDF2_ITERATIONS, d);
+      writeVaultFile(userId, file);
+      keyRef.current = key;
+      saltRef.current = salt;
+      iterRef.current = PBKDF2_ITERATIONS;
+      setLastWrite(file.updatedAt);
+    },
+    [userId],
+  );
 
   const importBackup = useCallback(
     async (f: File): Promise<{ ok: true } | { ok: false; error: string }> => {
@@ -187,17 +205,17 @@ export function VaultProvider({ children }: { children: ReactNode }) {
       }
       const file = parseVaultFile(parsed);
       if (!file) return { ok: false, error: "Ce fichier n'est pas une sauvegarde ZenFlow valide." };
-      writeVaultFile(file);
+      writeVaultFile(userId, file);
       wipe();
       setLockReason("import");
       setStatus("locked");
       return { ok: true };
     },
-    [wipe],
+    [wipe, userId],
   );
 
   const destroy = useCallback(() => {
-    clearVaultFile();
+    clearVaultFile(userId);
     writeLockout(EMPTY_LOCKOUT);
     setLockout(EMPTY_LOCKOUT);
     wipe();
@@ -206,7 +224,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     setPreviousUnlock(null);
     setLockReason(null);
     setStatus("empty");
-  }, [wipe]);
+  }, [wipe, userId]);
 
   const setBusy = useCallback((busy: boolean) => {
     busyRef.current = busy;
@@ -256,10 +274,11 @@ export function VaultProvider({ children }: { children: ReactNode }) {
       update,
       exportBackup,
       importBackup,
+      rekey,
       destroy,
       setBusy,
     }),
-    [status, data, previousUnlock, lastWrite, lockout, lockReason, keyExtractable, create, unlock, lock, update, exportBackup, importBackup, destroy, setBusy],
+    [status, data, previousUnlock, lastWrite, lockout, lockReason, keyExtractable, create, unlock, lock, update, exportBackup, importBackup, rekey, destroy, setBusy],
   );
 
   return <VaultContext.Provider value={value}>{children}</VaultContext.Provider>;

@@ -5,15 +5,15 @@ import { SectionHeading } from "./SectionHeading";
 export const FAQ_ITEMS = [
   {
     q: "Mes données sont-elles vraiment privées ?",
-    a: "Oui. Tout est chiffré dans ton navigateur (AES-256-GCM) avec une clé dérivée de ta phrase secrète (PBKDF2-SHA256, 600 000 itérations). ZenFlow n'a pas de serveur de comptes : ni tes données ni ta phrase secrète ne quittent ton appareil, et il n'y a ni cookies ni traqueurs.",
+    a: "Tes données de pratique (statistiques, alarmes, réglages) sont chiffrées dans ton navigateur (AES-256-GCM) avec une clé dérivée de ton mot de passe (PBKDF2-SHA256, 600 000 itérations) et ne quittent jamais ton appareil. Ton compte (e-mail, prénom) est géré par notre serveur ; ton mot de passe y est stocké uniquement sous forme d'empreinte, jamais en clair. Pour la sécurité de ton compte, nous enregistrons l'adresse IP et l'horodatage de tes connexions. Aucun traqueur.",
   },
   {
-    q: "Que se passe-t-il si j'oublie ma phrase secrète ?",
-    a: "Elle est impossible à récupérer, par conception : elle n'est stockée nulle part et personne d'autre ne la connaît. Sans elle, ton coffre reste illisible. Garde-la dans un gestionnaire de mots de passe. Tu peux toujours effacer le coffre et repartir de zéro.",
+    q: "Que se passe-t-il si j'oublie mon mot de passe ?",
+    a: "Tes données de pratique chiffrées sur ton appareil deviennent illisibles : personne ne peut les déchiffrer à ta place. Garde ton mot de passe dans un gestionnaire et exporte régulièrement une sauvegarde chiffrée. Tu peux toujours effacer les données locales et repartir de zéro.",
   },
   {
     q: "Puis-je utiliser ZenFlow sur plusieurs appareils ?",
-    a: "Il n'y a pas de synchronisation automatique. Exporte une sauvegarde chiffrée (.zenflow) depuis l'app, puis importe-la dans un autre navigateur : elle s'ouvre avec la même phrase secrète.",
+    a: "Il n'y a pas de synchronisation automatique. Exporte une sauvegarde chiffrée (.zenflow) depuis l'app, puis importe-la dans un autre navigateur : elle s'ouvre avec le mot de passe utilisé lors de l'export.",
   },
   {
     q: "Les sons utilisent-ils des fichiers audio ?",
@@ -25,7 +25,7 @@ export const FAQ_ITEMS = [
   },
   {
     q: "Que protège exactement le chiffrement ?",
-    a: "Il protège tes données si quelqu'un accède à ton navigateur ou à une sauvegarde : sans la phrase secrète, elles sont illisibles. Il ne protège pas d'un appareil déjà compromis (logiciel espion, extension malveillante). Le verrouillage automatique et le délai croissant après plusieurs échecs limitent les accès opportunistes.",
+    a: "Il protège tes données si quelqu'un accède à ton navigateur ou à une sauvegarde : sans ton mot de passe, elles sont illisibles. Il ne protège pas d'un appareil déjà compromis (logiciel espion, extension malveillante). Le verrouillage automatique et le délai croissant après plusieurs échecs limitent les accès opportunistes.",
   },
 ];
 

@@ -14,7 +14,7 @@ export function FinalCta() {
         <h2 id="cta-title" className="relative text-4xl font-semibold sm:text-6xl">
           Prêt à entrer dans le <span className="text-aurora">flow</span> ?
         </h2>
-        <p className="relative mx-auto mt-5 max-w-lg text-lg text-muted-foreground">Crée ton coffre en moins d'une minute. Pas d'e-mail, pas de compte en ligne.</p>
+        <p className="relative mx-auto mt-5 max-w-lg text-lg text-muted-foreground">Crée ton compte en moins d'une minute. Tes données de pratique restent chiffrées chez toi.</p>
         <div className="relative mt-10 flex justify-center">
           <Magnetic>
             <Button asChild variant="hero" size="lg">
@@ -47,7 +47,7 @@ export function Footer() {
         </nav>
       </div>
       <p className="mx-auto mt-10 max-w-7xl text-xs text-muted-foreground">
-        © 2026 ZenFlow · Aucun cookie, aucun traqueur, aucune donnée envoyée à un serveur.
+        © 2026 ZenFlow · Aucun traqueur. Données de pratique chiffrées sur ton appareil.
       </p>
     </footer>
   );

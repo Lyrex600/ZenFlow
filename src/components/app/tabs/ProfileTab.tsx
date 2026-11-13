@@ -19,6 +19,10 @@ import { dayKey } from "@/lib/stats";
 import { nameSchema } from "@/lib/vault/schema";
 import { downloadFile } from "@/lib/vault/storage";
 import { useVault } from "@/lib/vault/VaultProvider";
+import { useAccount } from "@/lib/account/AccountProvider";
+import { evaluatePassword } from "@/lib/security/password";
+import { PasswordField } from "../PasswordField";
+import { StrengthMeter } from "../StrengthMeter";
 import { useApp } from "../AppContext";
 import { Panel, TabHeader } from "../Panel";
 
@@ -52,9 +56,58 @@ export function ExportButtons() {
   );
 }
 
+function ChangePassword() {
+  const account = useAccount();
+  const { rekey } = useVault();
+  const [current, setCurrent] = useState("");
+  const [next, setNext] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const evaluation = evaluatePassword(next, [account.user?.email?.split("@")[0] ?? ""]);
+  const can = current.length > 0 && evaluation.ok && next === confirm && !pending;
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!can) return;
+    setPending(true);
+    setError(null);
+    const r = await account.changePassword(current, next);
+    if (!r.ok) {
+      setError(r.error);
+      setPending(false);
+      return;
+    }
+    await rekey(next);
+    setCurrent("");
+    setNext("");
+    setConfirm("");
+    setPending(false);
+    toast.success("Mot de passe modifié", { description: "Tes données locales ont été re-chiffrées avec le nouveau mot de passe." });
+  };
+  return (
+    <form onSubmit={submit} className="space-y-4" noValidate>
+      <input type="email" name="username" autoComplete="username" value={account.user?.email ?? ""} readOnly hidden aria-hidden />
+      <PasswordField id="pw-current" label="Mot de passe actuel" autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} />
+      <PasswordField id="pw-new" label="Nouveau mot de passe" autoComplete="new-password" value={next} onChange={(e) => setNext(e.target.value)} />
+      <StrengthMeter id="pw-strength" evaluation={evaluation} empty={next.length === 0} />
+      <PasswordField id="pw-confirm" label="Confirme le nouveau mot de passe" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+      {error && <p role="alert" className="text-sm text-danger">{error}</p>}
+      <Button type="submit" variant="glass" disabled={!can}>
+        {pending ? "Modification…" : "Changer le mot de passe"}
+      </Button>
+    </form>
+  );
+}
+
 export function ProfileTab() {
   const { data, update } = useApp();
   const { destroy } = useVault();
+  const account = useAccount();
+  const removeAccount = async () => {
+    const ok = await account.deleteAccount();
+    if (ok) destroy();
+    else toast.error("Suppression impossible pour le moment.");
+  };
   const [name, setName] = useState(data.profile.name);
   const [error, setError] = useState<string | null>(null);
   const [confirmText, setConfirmText] = useState("");
@@ -68,13 +121,14 @@ export function ProfileTab() {
     }
     setError(null);
     update((d) => ({ ...d, profile: { ...d.profile, name: r.data } }));
+    void account.updateDisplayName(r.data);
     setName(r.data);
     toast.success("Profil mis à jour");
   };
 
   return (
     <div>
-      <TabHeader title="Profil" subtitle="Ton identité ici se résume à un prénom, chiffré avec le reste." />
+      <TabHeader title="Profil" subtitle="Ton compte, ton mot de passe et tes exports." />
       <div className="grid gap-6 lg:grid-cols-2">
         <Panel title="Identité">
           <div className="mb-6 flex items-center gap-4">
@@ -83,7 +137,8 @@ export function ProfileTab() {
             </span>
             <div>
               <p className="font-display text-xl font-semibold">{data.profile.name}</p>
-              <p className="text-sm text-muted-foreground">Coffre créé le {dateFmt.format(data.profile.createdAt)}</p>
+              <p className="text-sm text-muted-foreground">{account.user?.email}</p>
+              <p className="text-sm text-muted-foreground">Espace créé le {dateFmt.format(data.profile.createdAt)}</p>
             </div>
           </div>
           <form onSubmit={save} className="space-y-3" noValidate>
@@ -102,7 +157,11 @@ export function ProfileTab() {
           <ExportButtons />
         </Panel>
 
-        <Panel title="Supprimer mon compte" description="Efface définitivement le coffre de cet appareil. Il n'existe aucune copie ailleurs." className="lg:col-span-2">
+        <Panel title="Mot de passe" description="Change-le régulièrement. Tes données locales sont re-chiffrées automatiquement.">
+          <ChangePassword />
+        </Panel>
+
+        <Panel title="Supprimer mon compte" description="Supprime ton compte, ton historique de connexions et les données chiffrées de cet appareil.">
           <AlertDialog onOpenChange={(o) => !o && setConfirmText("")}>
             <AlertDialogTrigger asChild>
               <Button variant="destructive">
@@ -113,13 +172,13 @@ export function ProfileTab() {
               <AlertDialogHeader>
                 <AlertDialogTitle>Supprimer ton compte ?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Toutes tes données (sessions, alarmes, réglages) seront effacées de cet appareil. Sans sauvegarde .zenflow, elles seront perdues. Tape <strong>SUPPRIMER</strong> pour confirmer.
+                  Ton compte et ton historique de connexions seront supprimés de nos serveurs, et tes données de pratique effacées de cet appareil. Tape <strong>SUPPRIMER</strong> pour confirmer.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <Input value={confirmText} onChange={(e) => setConfirmText(e.target.value)} aria-label="Tape SUPPRIMER pour confirmer" autoComplete="off" className="h-11 rounded-xl bg-background/40" />
               <AlertDialogFooter>
                 <AlertDialogCancel>Annuler</AlertDialogCancel>
-                <AlertDialogAction className="bg-destructive text-destructive-foreground" disabled={confirmText !== "SUPPRIMER"} onClick={destroy}>
+                <AlertDialogAction className="bg-destructive text-destructive-foreground" disabled={confirmText !== "SUPPRIMER"} onClick={() => void removeAccount()}>
                   Supprimer
                 </AlertDialogAction>
               </AlertDialogFooter>

@@ -45,14 +45,14 @@ export function Hero() {
         <motion.div initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.12, delayChildren: 0.15 } } }} className="max-w-3xl">
           <motion.p variants={item} className="glass mb-7 inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-medium text-muted-foreground sm:text-sm">
             <Lock className="h-3.5 w-3.5 text-primary" aria-hidden />
-            Chiffrement local AES-256 · 100% privé
+            Chiffrement local AES-256 · Sans traqueur
           </motion.p>
           <motion.h1 id="hero-title" variants={item} className="text-5xl font-semibold leading-[0.95] sm:text-7xl lg:text-[96px]">
             <span className="text-gradient">Reprends le contrôle de ton </span>
             <span className="text-aurora">attention.</span>
           </motion.h1>
           <motion.p variants={item} className="mt-7 max-w-xl text-lg leading-relaxed text-muted-foreground sm:text-xl">
-            Respiration guidée, sessions Pomodoro, sons d'ambiance et statistiques réunis dans un espace calme — chiffré sur ton appareil, sans compte en ligne.
+            Respiration guidée, sessions Pomodoro, sons d'ambiance et statistiques réunis dans un espace calme — tes données de pratique chiffrées sur ton appareil.
           </motion.p>
           <motion.div variants={item} className="mt-10 flex flex-wrap items-center gap-3">
             <Magnetic>

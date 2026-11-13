@@ -1,10 +1,11 @@
 import { parseVaultFile, type VaultFile } from "./crypto";
 
-const VAULT_KEY = "zenflow.vault.v1";
+/** One encrypted vault per account and device. */
+const vaultKey = (userId: string) => `zenflow.vault.v1:${userId}`;
 
-export function readVaultFile(): VaultFile | null {
+export function readVaultFile(userId: string): VaultFile | null {
   try {
-    const raw = localStorage.getItem(VAULT_KEY);
+    const raw = localStorage.getItem(vaultKey(userId));
     if (!raw) return null;
     return parseVaultFile(JSON.parse(raw));
   } catch {
@@ -12,20 +13,20 @@ export function readVaultFile(): VaultFile | null {
   }
 }
 
-export function hasVault(): boolean {
+export function hasVault(userId: string): boolean {
   try {
-    return localStorage.getItem(VAULT_KEY) !== null;
+    return localStorage.getItem(vaultKey(userId)) !== null;
   } catch {
     return false;
   }
 }
 
-export function writeVaultFile(file: VaultFile): void {
-  localStorage.setItem(VAULT_KEY, JSON.stringify(file));
+export function writeVaultFile(userId: string, file: VaultFile): void {
+  localStorage.setItem(vaultKey(userId), JSON.stringify(file));
 }
 
-export function clearVaultFile(): void {
-  localStorage.removeItem(VAULT_KEY);
+export function clearVaultFile(userId: string): void {
+  localStorage.removeItem(vaultKey(userId));
 }
 
 export function downloadFile(filename: string, content: string, type: string): void {

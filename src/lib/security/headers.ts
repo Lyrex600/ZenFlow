@@ -1,7 +1,7 @@
 /**
  * Content-Security-Policy for the published app. 'unsafe-inline' scripts are
  * required by the framework's inline hydration payload; eval stays forbidden
- * and every resource (scripts, fonts, data) must come from our own origin.
+ * and resources come from our own origin, plus the account backend for API calls.
  */
 const BASE_DIRECTIVES = [
   "default-src 'self'",
@@ -9,7 +9,7 @@ const BASE_DIRECTIVES = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self' data:",
-  "connect-src 'self'",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
   "media-src 'self' blob:",
   "worker-src 'self' blob:",
   "object-src 'none'",

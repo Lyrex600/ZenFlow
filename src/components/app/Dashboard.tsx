@@ -1,11 +1,12 @@
 import { Link } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
-import { BarChart3, Bell, Headphones, Lock, Settings, Timer, UserRound, Wind, type LucideIcon } from "lucide-react";
+import { BarChart3, Bell, Headphones, Lock, LogOut, Settings, Timer, UserRound, Wind, type LucideIcon } from "lucide-react";
 import { LogoMark, Logo } from "@/components/brand/Logo";
 import { ThemeToggle } from "@/components/fx/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useVault } from "@/lib/vault/VaultProvider";
+import { useAccount } from "@/lib/account/AccountProvider";
 import { AppProvider, useApp } from "./AppContext";
 import { formatClock, PomodoroProvider, usePomodoro, usePomodoroRemaining } from "./PomodoroContext";
 import { AlarmsTab } from "./tabs/AlarmsTab";
@@ -59,6 +60,11 @@ function PomodoroBadge({ onOpen }: { onOpen: () => void }) {
 function Shell({ tab, onTab }: { tab: TabId; onTab: (t: TabId) => void }) {
   const { data } = useApp();
   const { lock } = useVault();
+  const { signOut } = useAccount();
+  const logout = async () => {
+    await lock("manual");
+    await signOut();
+  };
   const Content = CONTENT[tab];
 
   return (
@@ -91,6 +97,9 @@ function Shell({ tab, onTab }: { tab: TabId; onTab: (t: TabId) => void }) {
           <Button variant="glass" className="flex-1" onClick={() => void lock("manual")}>
             <Lock /> Verrouiller
           </Button>
+          <Button variant="ghost" size="icon" onClick={() => void logout()} aria-label="Se déconnecter" title="Se déconnecter">
+            <LogOut />
+          </Button>
         </div>
       </aside>
 
@@ -102,8 +111,11 @@ function Shell({ tab, onTab }: { tab: TabId; onTab: (t: TabId) => void }) {
         <div className="flex items-center gap-1">
           <PomodoroBadge onOpen={() => onTab("focus")} />
           <ThemeToggle />
-          <Button variant="ghost" size="icon" onClick={() => void lock("manual")} aria-label="Verrouiller le coffre">
+          <Button variant="ghost" size="icon" onClick={() => void lock("manual")} aria-label="Verrouiller">
             <Lock />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => void logout()} aria-label="Se déconnecter">
+            <LogOut />
           </Button>
         </div>
       </header>

@@ -14,13 +14,89 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      login_events: {
+        Row: {
+          created_at: string
+          id: number
+          ip: unknown
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: never
+          ip?: unknown
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: never
+          ip?: unknown
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "login_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          disabled_at: string | null
+          display_name: string | null
+          email: string
+          id: string
+          is_admin: boolean
+          last_seen_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          disabled_at?: string | null
+          display_name?: string | null
+          email: string
+          id: string
+          is_admin?: boolean
+          last_seen_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          disabled_at?: string | null
+          display_name?: string | null
+          email?: string
+          id?: string
+          is_admin?: boolean
+          last_seen_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      admin_user_overview: {
+        Args: never
+        Returns: {
+          created_at: string
+          disabled_at: string
+          display_name: string
+          email: string
+          id: string
+          is_admin: boolean
+          last_ip: string
+          last_login_at: string
+          last_seen_at: string
+        }[]
+      }
+      is_admin: { Args: { uid: string }; Returns: boolean }
+      touch_presence: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never

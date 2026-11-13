@@ -17,7 +17,7 @@ const FEATURES: { icon: Icon; title: string; text: string; chips?: string[] }[] 
     chips: ["pluie", "océan", "forêt", "feu", "vent", "ruisseau", "orage", "bruit blanc"],
   },
   { icon: BarChart3, title: "Statistiques", text: "Minutes de focus, sessions, pauses, série de jours et graphique des 7 derniers jours." },
-  { icon: ShieldCheck, title: "100% privé", text: "Tes données sont chiffrées en AES-256-GCM sur ton appareil. Aucun serveur de comptes, aucun traqueur." },
+  { icon: ShieldCheck, title: "Privé par conception", text: "Tes données de pratique sont chiffrées en AES-256-GCM sur ton appareil. Ton compte est sécurisé côté serveur, sans aucun traqueur." },
 ];
 
 export function Features() {
@@ -81,7 +81,7 @@ export function HowItWorks() {
 const WHY: { icon: Icon; title: string; text: string }[] = [
   { icon: Leaf, title: "Moins de bruit", text: "Pas de fil d'actualité, pas de badges, pas de notifications inutiles. Juste ce qu'il faut pour te concentrer." },
   { icon: Sparkles, title: "Plus de constance", text: "Les séries et le graphique hebdomadaire t'aident à installer une habitude, sans culpabiliser." },
-  { icon: ShieldCheck, title: "Vraiment à toi", text: "Aucun compte en ligne, aucune donnée sur un serveur. Ton coffre chiffré reste sur ton appareil." },
+  { icon: ShieldCheck, title: "Vraiment à toi", text: "Tes statistiques, alarmes et réglages restent chiffrés sur ton appareil. Le serveur ne connaît que ton compte et tes connexions." },
 ];
 
 export function Why() {
@@ -107,7 +107,7 @@ const STATS = [
   { value: 256, label: "bits — clé AES-GCM" },
   { value: 600000, label: "itérations PBKDF2" },
   { value: 8, label: "paysages sonores" },
-  { value: 0, label: "donnée envoyée à un serveur" },
+  { value: 0, label: "traqueur publicitaire" },
 ];
 
 export function StatsStrip() {
