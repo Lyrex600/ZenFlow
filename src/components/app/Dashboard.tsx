@@ -83,9 +83,9 @@ function Shell({ tab, onTab }: { tab: TabId; onTab: (t: TabId) => void }) {
                 type="button"
                 onClick={() => onTab(t.id)}
                 aria-current={active ? "page" : undefined}
-                className={cn("relative flex items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-medium transition-colors", active ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground")}
+                className={cn("relative flex items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-medium transition-colors", active ? "text-primary-foreground" : "text-muted-foreground hover:bg-accent/40 hover:text-foreground")}
               >
-                {active && <motion.span layoutId="side-pill" className="bg-aurora absolute inset-0 rounded-2xl shadow-glow" transition={{ type: "spring", stiffness: 380, damping: 32 }} />}
+                {active && <motion.span layoutId="side-pill" className="bg-aurora absolute inset-0 rounded-2xl shadow-glow" transition={{ type: "spring", stiffness: 300, damping: 30, mass: 0.8 }} />}
                 <t.icon className="relative h-4 w-4" aria-hidden />
                 <span className="relative">{t.label}</span>
               </button>
@@ -128,7 +128,7 @@ function Shell({ tab, onTab }: { tab: TabId; onTab: (t: TabId) => void }) {
           <PomodoroBadge onOpen={() => onTab("focus")} />
         </div>
         <AnimatePresence mode="wait">
-          <motion.div key={tab} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}>
+          <motion.div key={tab} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}>
             <Content />
           </motion.div>
         </AnimatePresence>
@@ -147,7 +147,7 @@ function Shell({ tab, onTab }: { tab: TabId; onTab: (t: TabId) => void }) {
               aria-label={t.label}
               className={cn("relative flex min-w-[68px] flex-1 flex-col items-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-medium", active ? "text-primary-foreground" : "text-muted-foreground")}
             >
-              {active && <motion.span layoutId="bar-pill" className="bg-aurora absolute inset-0 rounded-2xl" transition={{ type: "spring", stiffness: 380, damping: 32 }} />}
+              {active && <motion.span layoutId="bar-pill" className="bg-aurora absolute inset-0 rounded-2xl" transition={{ type: "spring", stiffness: 300, damping: 30, mass: 0.8 }} />}
               <t.icon className="relative h-5 w-5" aria-hidden />
               <span className="relative">{t.short}</span>
             </button>

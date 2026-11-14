@@ -23,6 +23,7 @@ export function BreathTab() {
   const [phase, setPhase] = useState(() => breathAt(pattern, 0));
 
   const scaleRef = useRef(0.85);
+  const haloRef = useRef<HTMLDivElement>(null);
   const accRef = useRef(0);
   const startRef = useRef(0);
   const total = minutes * 60;
@@ -50,6 +51,7 @@ export function BreathTab() {
       const el = accRef.current + (t - startRef.current) / 1000;
       const st = breathAt(pattern, el);
       scaleRef.current = st.scale;
+      haloRef.current?.style.setProperty("--b", ((st.scale - 0.72) / 0.5).toFixed(3));
       if (t - lastUi > 100) {
         lastUi = t;
         setElapsed(el);
@@ -87,11 +89,14 @@ export function BreathTab() {
       <TabHeader title="Pause guidée" subtitle="Suis l'orbe : elle grandit quand tu inspires, se pose quand tu retiens, se vide quand tu expires." />
       <div className="grid gap-6 xl:grid-cols-[1fr_380px]">
         <Panel className="flex flex-col items-center justify-center overflow-hidden py-10">
+          <div className="relative">
+          <div ref={haloRef} aria-hidden className={cn("breath-halo pointer-events-none absolute inset-1", !running && "breath-halo-idle")} />
           <ProgressRing progress={progress} size={320} stroke={4} className="max-w-full" label="Progression de la pause">
             <SceneHost className="absolute inset-3 overflow-hidden rounded-full" fallback={<OrbFallback className="h-40 w-40" />}>
               {(quality, active) => <BreathScene quality={quality} active={active} light={prefs.theme === "light"} scaleRef={scaleRef} />}
             </SceneHost>
           </ProgressRing>
+          </div>
           <div className="mt-8 text-center" aria-live="polite">
             <p className="font-display text-5xl font-semibold">{idle ? "Prêt ?" : phase.label}</p>
             <p className="mt-2 text-sm tabular-nums text-muted-foreground">

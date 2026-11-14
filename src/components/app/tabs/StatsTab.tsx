@@ -1,4 +1,5 @@
 import { Flame, Leaf, RotateCcw, Timer, Trophy } from "lucide-react";
+import { useReducedMotion } from "framer-motion";
 import { useMemo } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { CountUp } from "@/components/fx/CountUp";
@@ -45,6 +46,7 @@ export function ResetStatsButton() {
 
 export function StatsTab() {
   const { data } = useApp();
+  const reduce = useReducedMotion();
   const s = useMemo(() => summarize(data.sessions, Date.now()), [data.sessions]);
   const cards = [
     { label: "Minutes de focus", value: s.focusMinutes, icon: Timer },
@@ -60,7 +62,7 @@ export function StatsTab() {
         {cards.map((c) => (
           <div key={c.label} className="glass gradient-border rounded-3xl p-5 sm:p-6">
             <c.icon className="mb-4 h-5 w-5 text-primary" aria-hidden />
-            <CountUp value={c.value} className="font-display text-4xl font-semibold tabular-nums sm:text-5xl" />
+            <CountUp value={c.value} duration={1.4} className="font-display text-4xl font-semibold tabular-nums sm:text-5xl" />
             <p className="mt-1 text-sm text-muted-foreground">{c.label}</p>
           </div>
         ))}
@@ -83,7 +85,7 @@ export function StatsTab() {
                 contentStyle={{ background: "var(--popover)", border: "1px solid var(--hairline)", borderRadius: 14, color: "var(--foreground)" }}
                 formatter={(v: number) => [`${v} min`, "Focus"]}
               />
-              <Bar dataKey="minutes" fill="url(#zf-bar)" radius={[10, 10, 4, 4]} maxBarSize={44} />
+              <Bar dataKey="minutes" fill="url(#zf-bar)" radius={[10, 10, 4, 4]} maxBarSize={44} isAnimationActive={!reduce} animationBegin={180} animationDuration={1100} animationEasing="ease-out" />
             </BarChart>
           </ResponsiveContainer>
         </div>

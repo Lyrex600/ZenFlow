@@ -10,3 +10,4 @@
 - [ ] /admin dashboard: users table (search/sort), detail panel with login history, disable account (server-side)
 - [ ] Seed admin account (admin@gmail.com) server-side, never in client code
 - [ ] Update privacy/FAQ/landing copy to match what is actually stored server-side
+- [ ] Visual polish pass: upgraded orb shader, bloom/aberration (high tier only), layered particles, ring trails, eased camera, breath pulse, tilt cards, slide reveals, button press, sound equalizers, chart grow-in, tab pill

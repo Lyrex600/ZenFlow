@@ -15,6 +15,10 @@ interface ParticlesProps {
   animate?: boolean;
   /** Spread as a flat-ish field instead of a spherical shell. */
   field?: boolean;
+  /** RNG seed, so stacked layers do not overlap. */
+  seed?: number;
+  /** Overall opacity multiplier for this layer. */
+  opacity?: number;
 }
 
 function mulberry32(seed: number) {
@@ -27,13 +31,13 @@ function mulberry32(seed: number) {
   };
 }
 
-export function Particles({ count, inner = 2.2, outer = 9, size = 34, drift = 1, spin = 0.02, light, animate = true, field = false }: ParticlesProps) {
+export function Particles({ count, inner = 2.2, outer = 9, size = 34, drift = 1, spin = 0.02, light, animate = true, field = false, seed: seedValue = 7, opacity = 1 }: ParticlesProps) {
   const points = useRef<THREE.Points>(null);
   const dpr = useThree((s) => s.viewport.dpr);
   const colors = useMemo(() => palette(light), [light]);
 
   const geometry = useMemo(() => {
-    const rand = mulberry32(7);
+    const rand = mulberry32(seedValue);
     const pos = new Float32Array(count * 3);
     const scale = new Float32Array(count);
     const seed = new Float32Array(count);
@@ -50,7 +54,9 @@ export function Particles({ count, inner = 2.2, outer = 9, size = 34, drift = 1,
         pos[i * 3 + 1] = r * Math.sin(ph) * Math.sin(th) * 0.75;
         pos[i * 3 + 2] = r * Math.cos(ph);
       }
-      scale[i] = 0.4 + rand() * 1.2;
+      // Mostly fine dust, a few larger motes.
+      const m = rand();
+      scale[i] = 0.3 + m * m * m * 2.4 + rand() * 0.25;
       seed[i] = rand();
     }
     const g = new THREE.BufferGeometry();
@@ -58,7 +64,7 @@ export function Particles({ count, inner = 2.2, outer = 9, size = 34, drift = 1,
     g.setAttribute("aScale", new THREE.BufferAttribute(scale, 1));
     g.setAttribute("aSeed", new THREE.BufferAttribute(seed, 1));
     return g;
-  }, [count, inner, outer, field]);
+  }, [count, inner, outer, field, seedValue]);
 
   useEffect(() => () => geometry.dispose(), [geometry]);
 
@@ -71,6 +77,7 @@ export function Particles({ count, inner = 2.2, outer = 9, size = 34, drift = 1,
       uOpacity: { value: 0.9 },
       uColorA: { value: colors.pa.clone() },
       uColorB: { value: colors.pb.clone() },
+      uColorC: { value: colors.pc.clone() },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
@@ -80,8 +87,9 @@ export function Particles({ count, inner = 2.2, outer = 9, size = 34, drift = 1,
     uniforms.uPixelRatio.value = dpr;
     uniforms.uColorA.value.copy(colors.pa);
     uniforms.uColorB.value.copy(colors.pb);
-    uniforms.uOpacity.value = light ? 0.75 : 0.9;
-  }, [dpr, colors, light, uniforms]);
+    uniforms.uColorC.value.copy(colors.pc);
+    uniforms.uOpacity.value = (light ? 0.75 : 0.9) * opacity;
+  }, [dpr, colors, light, uniforms, opacity]);
 
   useFrame((_, delta) => {
     if (!animate) return;

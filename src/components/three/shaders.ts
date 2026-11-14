@@ -54,15 +54,31 @@ varying vec3 vViewDir;
 varying float vNoise;
 varying vec3 vPos;
 ${SNOISE}
+// Domain-warped simplex displacement: slow, organic, never a static wobble.
+float disp(vec3 n){
+  float t = uTime;
+  vec3 w = n + 0.26 * vec3(snoise(n * 0.7 + vec3(t * 0.05)));
+  return (snoise(w * uFreq + vec3(t * 0.14)) * 0.86 + snoise(n * uFreq * 1.9 - vec3(t * 0.1)) * 0.14) * uAmp;
+}
 void main(){
-  float n = snoise(normal * uFreq + vec3(uTime * 0.22));
-  float n2 = snoise(normal * uFreq * 2.3 - vec3(uTime * 0.17));
-  float disp = (n * 0.7 + n2 * 0.3) * uAmp;
-  vec3 p = position + normal * disp;
-  vNoise = n;
+  vec3 n = normalize(position);
+  float d = disp(n);
+  vec3 p = n * (1.0 + d);
+  // Perturbed normal from two neighbouring samples on the sphere.
+  vec3 up = abs(n.y) > 0.98 ? vec3(1.0, 0.0, 0.0) : vec3(0.0, 1.0, 0.0);
+  vec3 t1 = normalize(cross(n, up));
+  vec3 t2 = cross(n, t1);
+  float e = 0.012;
+  vec3 n1 = normalize(n + t1 * e);
+  vec3 n2 = normalize(n + t2 * e);
+  vec3 p1 = n1 * (1.0 + disp(n1));
+  vec3 p2 = n2 * (1.0 + disp(n2));
+  vec3 nn = normalize(cross(p1 - p, p2 - p));
+  if (dot(nn, n) < 0.0) nn = -nn;
+  vNoise = d / max(uAmp, 0.001);
   vPos = p;
   vec4 world = modelMatrix * vec4(p, 1.0);
-  vNormalW = normalize(mat3(modelMatrix) * normal);
+  vNormalW = normalize(mat3(modelMatrix) * nn);
   vViewDir = normalize(cameraPosition - world.xyz);
   gl_Position = projectionMatrix * viewMatrix * world;
 }
@@ -71,22 +87,48 @@ void main(){
 export const ORB_FRAGMENT = /* glsl */ `
 uniform vec3 uColorA;
 uniform vec3 uColorB;
+uniform vec3 uDeep;
 uniform float uTime;
+uniform float uGlow;
+uniform float uLight;
 varying vec3 vNormalW;
 varying vec3 vViewDir;
 varying float vNoise;
 varying vec3 vPos;
+// Procedural "environment" seen through the glass body.
+vec3 env(vec3 dir){
+  float h = dir.y * 0.5 + 0.5;
+  vec3 c = mix(uDeep, mix(uColorB, uColorA, h), smoothstep(0.2, 1.0, h));
+  float band = 0.5 + 0.5 * sin(dir.x * 5.0 + dir.z * 3.0 + uTime * 0.25);
+  return c * (0.55 + 0.45 * band * band);
+}
 void main(){
-  float facing = clamp(dot(normalize(vNormalW), normalize(vViewDir)), 0.0, 1.0);
+  vec3 N = normalize(vNormalW);
+  vec3 V = normalize(vViewDir);
+  float facing = clamp(dot(N, V), 0.0, 1.0);
   float f = 1.0 - facing;
   float fres = f * f * f;
-  float g = clamp(vPos.y * 0.45 + 0.5 + vNoise * 0.22, 0.0, 1.0);
-  vec3 base = mix(uColorA, uColorB, g);
-  float band = 0.5 + 0.5 * sin(vNoise * 6.0 + uTime * 0.6);
-  vec3 col = base * (0.22 + 0.38 * band);
-  col += base * fres * 1.7 + vec3(fres * fres) * 0.55;
-  col = clamp(col, 0.0, 2.0);
-  gl_FragColor = vec4(col, 1.0);
+  // Fake refraction + reflection.
+  vec3 refr = env(refract(-V, N, 0.72));
+  vec3 refl = env(reflect(-V, N));
+  vec3 body = mix(refr * 0.3, refl * 0.85, fres * 0.55);
+  // Inner glow: a luminous core that breathes with uGlow.
+  float core = facing * facing;
+  vec3 coreCol = mix(uColorA, uColorB, 0.35 + vNoise * 0.25);
+  body += coreCol * core * core * (0.12 + 0.32 * uGlow);
+  // Teal -> blue Fresnel rim.
+  float g = clamp(vPos.y * 0.42 + 0.5 + vNoise * 0.18, 0.0, 1.0);
+  vec3 rim = mix(uColorA, uColorB, g);
+  body += rim * fres * (1.55 + 0.6 * uGlow) * mix(1.0, 0.7, uLight);
+  // Soft specular highlight.
+  vec3 L = normalize(vec3(-0.45, 0.75, 0.55));
+  vec3 H = normalize(L + V);
+  float s = max(dot(N, H), 0.0);
+  float s2 = s * s; float s4 = s2 * s2; float s8 = s4 * s4; float s16 = s8 * s8; float s32 = s16 * s16;
+  body += vec3(s32 * s16) * mix(0.55, 0.4, uLight);
+  // Light ceiling keeps bloom finite on every GPU.
+  body = clamp(body, 0.0, 1.6);
+  gl_FragColor = vec4(body, 1.0);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
 }
@@ -120,6 +162,7 @@ uniform float uPixelRatio;
 uniform float uDrift;
 varying float vAlpha;
 varying float vMix;
+varying float vWhite;
 void main(){
   vec3 p = position;
   float t = uTime * uDrift;
@@ -129,22 +172,48 @@ void main(){
   vec4 mv = modelViewMatrix * vec4(p, 1.0);
   gl_Position = projectionMatrix * mv;
   gl_PointSize = uSize * aScale * uPixelRatio / max(0.1, -mv.z);
-  vAlpha = (0.35 + 0.65 * fract(aSeed * 7.13)) * (0.6 + 0.4 * sin(uTime * 1.3 + aSeed * 20.0));
+  float base = 0.18 + 0.82 * fract(aSeed * 7.13);
+  vAlpha = base * (0.55 + 0.45 * sin(uTime * (0.6 + fract(aSeed * 4.1)) + aSeed * 20.0));
   vMix = fract(aSeed * 3.7);
+  vWhite = step(0.8, fract(aSeed * 5.31)) * 0.75;
 }
 `;
 
 export const PARTICLE_FRAGMENT = /* glsl */ `
 uniform vec3 uColorA;
 uniform vec3 uColorB;
+uniform vec3 uColorC;
 uniform float uOpacity;
 varying float vAlpha;
 varying float vMix;
+varying float vWhite;
 void main(){
   float d = length(gl_PointCoord - 0.5);
   float a = clamp(1.0 - d * 2.0, 0.0, 1.0);
   a = a * a;
-  vec3 c = mix(uColorA, uColorB, vMix);
+  vec3 c = mix(mix(uColorA, uColorB, vMix), uColorC, vWhite);
   gl_FragColor = vec4(c, a * vAlpha * uOpacity);
+}
+`;
+
+// Torus with a light trail travelling along its major circle (uv.x).
+export const RING_VERTEX = /* glsl */ `
+varying vec2 vUv;
+void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
+`;
+
+export const RING_FRAGMENT = /* glsl */ `
+uniform vec3 uColorA;
+uniform vec3 uColorB;
+uniform float uHead;
+uniform float uOpacity;
+varying vec2 vUv;
+void main(){
+  float t = fract(vUv.x - uHead);
+  float trail = t * t * t;
+  float tip = trail * trail;
+  vec3 c = mix(uColorB, uColorA, t);
+  float a = (0.16 + 0.84 * trail) * uOpacity;
+  gl_FragColor = vec4(c * (1.0 + tip * 0.9), a);
 }
 `;

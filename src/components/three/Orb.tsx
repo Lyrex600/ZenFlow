@@ -4,6 +4,13 @@ import * as THREE from "three";
 import { HALO_FRAGMENT, HALO_VERTEX, ORB_FRAGMENT, ORB_VERTEX } from "./shaders";
 import { palette } from "./palette";
 
+/** Breathing scale range from lib/breathing (SMALL..BIG), used to derive glow. */
+const SCALE_MIN = 0.72;
+const SCALE_MAX = 1.22;
+/** Spring for the breathing scale: critically damped, so phases flow without overshoot. */
+const SPRING_K = 26;
+const SPRING_C = 2 * Math.sqrt(SPRING_K);
+
 interface OrbProps {
   detail: number;
   light: boolean;
@@ -18,21 +25,25 @@ interface OrbProps {
 
 export function Orb({ detail, light, morphRef, scaleRef, idle = true, animate = true }: OrbProps) {
   const group = useRef<THREE.Group>(null);
+  const velocity = useRef(0);
   const colors = useMemo(() => palette(light), [light]);
 
   const orbUniforms = useMemo(
     () => ({
       uTime: { value: 0 },
-      uAmp: { value: 0.16 },
-      uFreq: { value: 1.35 },
+      uAmp: { value: 0.09 },
+      uFreq: { value: 0.95 },
+      uGlow: { value: 0.35 },
+      uLight: { value: 0 },
       uColorA: { value: colors.a.clone() },
       uColorB: { value: colors.b.clone() },
+      uDeep: { value: colors.deep.clone() },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
   const haloUniforms = useMemo(
-    () => ({ uColorA: { value: colors.a.clone() }, uColorB: { value: colors.b.clone() }, uStrength: { value: 0.55 } }),
+    () => ({ uColorA: { value: colors.a.clone() }, uColorB: { value: colors.b.clone() }, uStrength: { value: 0.5 } }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
@@ -40,22 +51,37 @@ export function Orb({ detail, light, morphRef, scaleRef, idle = true, animate = 
   useEffect(() => {
     orbUniforms.uColorA.value.copy(colors.a);
     orbUniforms.uColorB.value.copy(colors.b);
+    orbUniforms.uDeep.value.copy(colors.deep);
+    orbUniforms.uLight.value = light ? 1 : 0;
     haloUniforms.uColorA.value.copy(colors.a);
     haloUniforms.uColorB.value.copy(colors.b);
-    haloUniforms.uStrength.value = light ? 0.35 : 0.55;
   }, [colors, light, orbUniforms, haloUniforms]);
 
   useFrame((state, delta) => {
     const dt = Math.min(delta, 0.05);
     if (animate) orbUniforms.uTime.value += dt;
-    const k = 1 - Math.exp(-4 * dt);
-    const amp = morphRef?.current ?? 0.16;
+    const k = 1 - Math.exp(-2.5 * dt);
+    const amp = morphRef?.current ?? 0.1;
     orbUniforms.uAmp.value += (amp - orbUniforms.uAmp.value) * k;
-    if (group.current) {
-      const target = scaleRef ? scaleRef.current : idle && animate ? 1 + Math.sin(state.clock.elapsedTime * 0.7) * 0.035 : 1;
-      const s = group.current.scale.x + (target - group.current.scale.x) * (scaleRef ? 1 - Math.exp(-10 * dt) : k);
-      group.current.scale.setScalar(s);
+    const g = group.current;
+    if (!g) return;
+
+    let s = g.scale.x;
+    if (scaleRef) {
+      // Spring toward the breathing target for a fluid, eased transition between phases.
+      const accel = SPRING_K * (scaleRef.current - s) - SPRING_C * velocity.current;
+      velocity.current += accel * dt;
+      s += velocity.current * dt;
+    } else {
+      const target = idle && animate ? 1 + Math.sin(state.clock.elapsedTime * 0.6) * 0.03 : 1;
+      s += (target - s) * k;
     }
+    g.scale.setScalar(s);
+
+    // Glow follows the breath: brighter core and halo when the lungs are full.
+    const breath = scaleRef ? THREE.MathUtils.clamp((s - SCALE_MIN) / (SCALE_MAX - SCALE_MIN), 0, 1) : 0.4 + (s - 1) * 4;
+    orbUniforms.uGlow.value = breath;
+    haloUniforms.uStrength.value = (light ? 0.28 : 0.42) + breath * (light ? 0.12 : 0.22);
   });
 
   return (

@@ -18,6 +18,28 @@ const SOUNDS: { id: SoundId; label: string; icon: ComponentType<SVGProps<SVGSVGE
   { id: "bruit", label: "Bruit blanc", icon: AudioWaveform },
 ];
 
+const BARS = [0.9, 0.6, 1, 0.7, 0.85] as const;
+
+/** Decorative equalizer: animated bars whose height follows the sound's level and the master volume. */
+function Equalizer({ on, amount }: { on: boolean; amount: number }) {
+  return (
+    <span aria-hidden className="ml-auto flex h-7 items-end gap-[3px]">
+      {BARS.map((h, i) => (
+        <span
+          key={i}
+          className={cn("eq-bar bg-aurora h-full w-[3px] rounded-full", on ? "opacity-100" : "opacity-40")}
+          style={{
+            animation: on ? `eq ${0.9 + i * 0.17}s ease-in-out ${i * -0.23}s infinite` : "none",
+            ["--eq-hi" as string]: String(0.25 + 0.75 * h * amount),
+            ["--eq-lo" as string]: String(0.12 + 0.25 * h * amount),
+            ["--eq-rest" as string]: on ? String(0.2 + 0.4 * h * amount) : "0.16",
+          }}
+        />
+      ))}
+    </span>
+  );
+}
+
 export function SoundsTab() {
   const { data, setSettings, ambient } = useApp();
 
@@ -61,12 +83,13 @@ export function SoundsTab() {
                     on ? "bg-aurora text-primary-foreground shadow-glow" : "hairline text-muted-foreground",
                   )}
                 >
-                  <s.icon className={cn("h-6 w-6", on && "animate-pulse")} aria-hidden />
+                  <s.icon className="h-6 w-6" aria-hidden />
                 </span>
                 <span>
                   <span className="block font-display text-lg font-semibold">{s.label}</span>
                   <span className="text-xs text-muted-foreground">{on ? "En lecture" : "Touche pour écouter"}</span>
                 </span>
+                <Equalizer on={on} amount={Math.max(0.15, Math.min(1, ambient.levels[s.id] * (0.4 + data.settings.volume * 0.6)))} />
               </button>
               <Slider
                 className="mt-5"

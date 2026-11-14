@@ -2,6 +2,7 @@ import { BarChart3, Bell, Headphones, Leaf, Quote, ShieldCheck, Sparkles, Timer,
 import type { ComponentType, SVGProps } from "react";
 import { CountUp } from "@/components/fx/CountUp";
 import { Reveal } from "@/components/fx/Reveal";
+import { TiltCard } from "@/components/fx/TiltCard";
 import { SectionHeading } from "./SectionHeading";
 
 type Icon = ComponentType<SVGProps<SVGSVGElement>>;
@@ -27,7 +28,8 @@ export function Features() {
       <div className="mx-auto grid max-w-7xl gap-5 md:grid-cols-2 lg:grid-cols-3">
         {FEATURES.map((f, i) => (
           <Reveal key={f.title} delay={(i % 3) * 0.08}>
-            <article className="glass gradient-border group h-full rounded-2xl p-7 transition-all duration-500 hover:-translate-y-1 hover:shadow-glow">
+            <TiltCard className="rounded-2xl">
+            <article className="glass gradient-border group h-full rounded-2xl p-7 transition-shadow duration-500 hover:shadow-glow">
               <div className="bg-aurora mb-6 flex h-12 w-12 items-center justify-center rounded-2xl text-primary-foreground shadow-glow transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6">
                 <f.icon className="h-5 w-5" aria-hidden />
               </div>
@@ -43,6 +45,7 @@ export function Features() {
                 </ul>
               )}
             </article>
+            </TiltCard>
           </Reveal>
         ))}
       </div>
@@ -91,11 +94,13 @@ export function Why() {
       <div className="mx-auto grid max-w-6xl gap-5 md:grid-cols-3">
         {WHY.map((w, i) => (
           <Reveal key={w.title} delay={i * 0.1}>
-            <article className="glass gradient-border h-full rounded-2xl p-8">
+            <TiltCard className="rounded-2xl">
+            <article className="glass gradient-border h-full rounded-2xl p-8 transition-shadow duration-500 hover:shadow-glow">
               <w.icon className="mb-8 h-7 w-7 text-primary" aria-hidden />
               <h3 className="text-2xl font-semibold">{w.title}</h3>
               <p className="mt-3 leading-relaxed text-muted-foreground">{w.text}</p>
             </article>
+            </TiltCard>
           </Reveal>
         ))}
       </div>

@@ -1,10 +1,12 @@
 import { Canvas } from "@react-three/fiber";
-import type { MutableRefObject } from "react";
+import { lazy, Suspense, type MutableRefObject } from "react";
 import { Orb } from "./Orb";
 import { Particles } from "./Particles";
 import { Rings } from "./Rings";
 import { Ready } from "./Ready";
 import type { SceneQuality } from "./types";
+
+const Effects = lazy(() => import("./Effects"));
 
 export default function BreathScene({
   quality,
@@ -27,9 +29,14 @@ export default function BreathScene({
       camera={{ position: [0, 0, 6.2], fov: 42 }}
       aria-hidden
     >
-      <Orb detail={high ? 48 : 24} light={light} scaleRef={scaleRef} animate={decorative} />
+      <Orb detail={high ? 40 : 18} light={light} scaleRef={scaleRef} animate={decorative} />
       <Rings light={light} animate={decorative} />
-      <Particles count={high ? 900 : 350} inner={2.8} outer={7} light={light} animate={decorative} drift={0.6} />
+      <Particles count={high ? 900 : 350} inner={2.8} outer={7} seed={5} light={light} animate={decorative} drift={0.6} />
+      {high && !light && (
+        <Suspense fallback={null}>
+          <Effects />
+        </Suspense>
+      )}
       <Ready />
     </Canvas>
   );
