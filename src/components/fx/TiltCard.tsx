@@ -1,5 +1,6 @@
-import { motion, useMotionValue, useReducedMotion, useSpring, useTransform } from "framer-motion";
+import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { useRef, type PointerEvent, type ReactNode } from "react";
+import { useSafeReducedMotion } from "@/hooks/use-safe-reduced-motion";
 import { cn } from "@/lib/utils";
 
 /** Max tilt in degrees: subtle on purpose. */
@@ -12,7 +13,7 @@ const SPRING = { stiffness: 170, damping: 22, mass: 0.6 };
  */
 export function TiltCard({ children, className }: { children: ReactNode; className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
-  const reduce = useReducedMotion();
+  const reduce = useSafeReducedMotion();
   const px = useMotionValue(0.5);
   const py = useMotionValue(0.5);
   const sx = useSpring(px, SPRING);

@@ -16,6 +16,11 @@ const FOLLOW_DAMP = 2.8;
 const TILT_X = 0.24;
 const TILT_Y = 0.34;
 const CAM_PARALLAX = 0.35;
+/** Surface displacement at rest and extra amount added by the scroll morph. */
+const REST_MORPH = 0.06;
+const SCROLL_MORPH = 0.12;
+/** Visible half-height at the resting camera distance (fov 45, z 5.4). */
+const HALF_H = Math.tan((45 / 2) * (Math.PI / 180)) * 5.4;
 
 const damp = (current: number, target: number, rate: number, dt: number) => current + (target - current) * (1 - Math.exp(-rate * dt));
 
@@ -40,11 +45,12 @@ function Rig({ animate, light, detail, layers }: { animate: boolean; light: bool
   const near = useRef<THREE.Group>(null);
   const mid = useRef<THREE.Group>(null);
   const far = useRef<THREE.Group>(null);
-  const morph = useRef(0.09);
+  const morph = useRef(REST_MORPH);
   const smooth = useRef({ px: 0, py: 0, scroll: 0 });
   const pointer = useWindowPointer();
   const camera = useThree((s) => s.camera);
   const width = useThree((s) => s.size.width);
+  const height = useThree((s) => s.size.height);
 
   useFrame((_, delta) => {
     const dt = Math.min(delta, 0.05);
@@ -58,7 +64,7 @@ function Rig({ animate, light, detail, layers }: { animate: boolean; light: bool
     const p = sm.scroll;
     // Ease-in-out on scroll progress so the dolly starts and ends gently.
     const e = p * p * (3 - 2 * p);
-    morph.current = 0.09 + e * 0.24;
+    morph.current = REST_MORPH + e * SCROLL_MORPH;
 
     camera.position.z = damp(camera.position.z, 5.4 + e * 2.6, FOLLOW_DAMP, dt);
     camera.position.x = damp(camera.position.x, sm.px * CAM_PARALLAX, FOLLOW_DAMP, dt);
@@ -68,8 +74,11 @@ function Rig({ animate, light, detail, layers }: { animate: boolean; light: bool
     const g = group.current;
     if (g) {
       const wide = width >= 1024;
+      // Narrow screens: shrink the orb to fit the width and lift it above the hero copy.
+      const fit = wide ? 1 : THREE.MathUtils.clamp((width / Math.max(1, height)) * 0.95, 0.44, 0.8);
+      g.scale.setScalar(damp(g.scale.x, fit, FOLLOW_DAMP, dt));
       g.position.x = damp(g.position.x, wide ? 1.75 : 0, FOLLOW_DAMP, dt);
-      g.position.y = damp(g.position.y, (wide ? 0 : 1.05) + e * 0.6, FOLLOW_DAMP, dt);
+      g.position.y = damp(g.position.y, (wide ? 0 : HALF_H * 0.6) + e * 0.6, FOLLOW_DAMP, dt);
       g.rotation.x = damp(g.rotation.x, -sm.py * TILT_X, FOLLOW_DAMP, dt);
       g.rotation.y = damp(g.rotation.y, sm.px * TILT_Y, FOLLOW_DAMP, dt);
     }
@@ -94,7 +103,7 @@ function Rig({ animate, light, detail, layers }: { animate: boolean; light: bool
       {layers === 3 ? (
         <>
           <group ref={near}>
-            <Particles count={counts[0] ?? 0} inner={3} outer={6} size={58} drift={0.8} spin={0.014} seed={11} light={light} animate={animate} />
+            <Particles count={counts[0] ?? 0} inner={3} outer={6} size={46} drift={0.8} spin={0.014} seed={11} light={light} animate={animate} />
           </group>
           <group ref={mid}>
             <Particles count={counts[1] ?? 0} inner={2.4} outer={9} size={36} drift={0.6} spin={0.02} seed={23} light={light} animate={animate} />
@@ -119,7 +128,7 @@ export default function HeroScene({ quality, active, light }: { quality: SceneQu
     <Canvas
       frameloop={animate && active ? "always" : "demand"}
       dpr={[1, high ? 1.75 : 1.25]}
-      gl={{ antialias: high, alpha: true, powerPreference: "high-performance" }}
+      gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
       camera={{ position: [0, 0, 5.4], fov: 45 }}
       aria-hidden
     >

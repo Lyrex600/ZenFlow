@@ -6,7 +6,7 @@ export function palette(light: boolean) {
     ? {
         a: new THREE.Color("#1fae97"),
         b: new THREE.Color("#2f7fe0"),
-        deep: new THREE.Color("#1b4a63"),
+        deep: new THREE.Color("#2b6a80"),
         pa: new THREE.Color("#178f7d"),
         pb: new THREE.Color("#2463b8"),
         pc: new THREE.Color("#6b8fae"),

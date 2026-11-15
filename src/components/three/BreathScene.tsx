@@ -25,7 +25,7 @@ export default function BreathScene({
     <Canvas
       frameloop={active ? "always" : "demand"}
       dpr={[1, high ? 1.75 : 1.25]}
-      gl={{ antialias: high, alpha: true }}
+      gl={{ antialias: true, alpha: true }}
       camera={{ position: [0, 0, 6.2], fov: 42 }}
       aria-hidden
     >

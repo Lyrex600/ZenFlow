@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { PARTICLE_FRAGMENT, PARTICLE_VERTEX } from "./shaders";
 import { palette } from "./palette";
+import { useBlending, useShaderMaterial } from "./useShaderMaterial";
 
 interface ParticlesProps {
   count: number;
@@ -83,6 +84,9 @@ export function Particles({ count, inner = 2.2, outer = 9, size = 34, drift = 1,
     [],
   );
 
+  const material = useShaderMaterial({ vertexShader: PARTICLE_VERTEX, fragmentShader: PARTICLE_FRAGMENT, uniforms, transparent: true, depthWrite: false });
+  useBlending(material, light ? THREE.NormalBlending : THREE.AdditiveBlending);
+
   useEffect(() => {
     uniforms.uPixelRatio.value = dpr;
     uniforms.uColorA.value.copy(colors.pa);
@@ -99,15 +103,6 @@ export function Particles({ count, inner = 2.2, outer = 9, size = 34, drift = 1,
   });
 
   return (
-    <points ref={points} geometry={geometry}>
-      <shaderMaterial
-        vertexShader={PARTICLE_VERTEX}
-        fragmentShader={PARTICLE_FRAGMENT}
-        uniforms={uniforms}
-        transparent
-        depthWrite={false}
-        blending={light ? THREE.NormalBlending : THREE.AdditiveBlending}
-      />
-    </points>
+    <points ref={points} geometry={geometry} material={material} />
   );
 }

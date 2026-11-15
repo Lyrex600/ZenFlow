@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, type MutableRefObject } from "react";
 import * as THREE from "three";
 import { HALO_FRAGMENT, HALO_VERTEX, ORB_FRAGMENT, ORB_VERTEX } from "./shaders";
 import { palette } from "./palette";
+import { useBlending, useShaderMaterial } from "./useShaderMaterial";
 
 /** Breathing scale range from lib/breathing (SMALL..BIG), used to derive glow. */
 const SCALE_MIN = 0.72;
@@ -31,7 +32,7 @@ export function Orb({ detail, light, morphRef, scaleRef, idle = true, animate = 
   const orbUniforms = useMemo(
     () => ({
       uTime: { value: 0 },
-      uAmp: { value: 0.09 },
+      uAmp: { value: 0.06 },
       uFreq: { value: 0.95 },
       uGlow: { value: 0.35 },
       uLight: { value: 0 },
@@ -48,6 +49,16 @@ export function Orb({ detail, light, morphRef, scaleRef, idle = true, animate = 
     [],
   );
 
+  const orbMaterial = useShaderMaterial({ vertexShader: ORB_VERTEX, fragmentShader: ORB_FRAGMENT, uniforms: orbUniforms });
+  const haloMaterial = useShaderMaterial({
+    vertexShader: HALO_VERTEX,
+    fragmentShader: HALO_FRAGMENT,
+    uniforms: haloUniforms,
+    transparent: true,
+    depthWrite: false,
+  });
+  useBlending(haloMaterial, light ? THREE.NormalBlending : THREE.AdditiveBlending);
+
   useEffect(() => {
     orbUniforms.uColorA.value.copy(colors.a);
     orbUniforms.uColorB.value.copy(colors.b);
@@ -61,7 +72,7 @@ export function Orb({ detail, light, morphRef, scaleRef, idle = true, animate = 
     const dt = Math.min(delta, 0.05);
     if (animate) orbUniforms.uTime.value += dt;
     const k = 1 - Math.exp(-2.5 * dt);
-    const amp = morphRef?.current ?? 0.1;
+    const amp = morphRef?.current ?? 0.06;
     orbUniforms.uAmp.value += (amp - orbUniforms.uAmp.value) * k;
     const g = group.current;
     if (!g) return;
@@ -86,20 +97,11 @@ export function Orb({ detail, light, morphRef, scaleRef, idle = true, animate = 
 
   return (
     <group ref={group}>
-      <mesh>
+      <mesh material={orbMaterial}>
         <icosahedronGeometry args={[1, detail]} />
-        <shaderMaterial vertexShader={ORB_VERTEX} fragmentShader={ORB_FRAGMENT} uniforms={orbUniforms} />
       </mesh>
-      <mesh position={[0, 0, -0.6]} renderOrder={-1}>
+      <mesh position={[0, 0, -0.6]} renderOrder={-1} material={haloMaterial}>
         <planeGeometry args={[5.2, 5.2]} />
-        <shaderMaterial
-          vertexShader={HALO_VERTEX}
-          fragmentShader={HALO_FRAGMENT}
-          uniforms={haloUniforms}
-          transparent
-          depthWrite={false}
-          blending={light ? THREE.NormalBlending : THREE.AdditiveBlending}
-        />
       </mesh>
     </group>
   );

@@ -57,8 +57,8 @@ ${SNOISE}
 // Domain-warped simplex displacement: slow, organic, never a static wobble.
 float disp(vec3 n){
   float t = uTime;
-  vec3 w = n + 0.26 * vec3(snoise(n * 0.7 + vec3(t * 0.05)));
-  return (snoise(w * uFreq + vec3(t * 0.14)) * 0.86 + snoise(n * uFreq * 1.9 - vec3(t * 0.1)) * 0.14) * uAmp;
+  vec3 w = n + 0.18 * vec3(snoise(n * 0.7 + vec3(t * 0.05)));
+  return (snoise(w * uFreq + vec3(t * 0.14)) * 0.92 + snoise(n * uFreq * 1.7 - vec3(t * 0.1)) * 0.08) * uAmp;
 }
 void main(){
   vec3 n = normalize(position);
@@ -120,12 +120,15 @@ void main(){
   float g = clamp(vPos.y * 0.42 + 0.5 + vNoise * 0.18, 0.0, 1.0);
   vec3 rim = mix(uColorA, uColorB, g);
   body += rim * fres * (1.55 + 0.6 * uGlow) * mix(1.0, 0.7, uLight);
-  // Soft specular highlight.
+  // Light theme: a milky, lit-from-within body so the orb reads as glass on a pale page, not a dark stone.
+  vec3 milk = mix(uColorA, uColorB, 0.5 + vPos.y * 0.25);
+  body = mix(body, body * 0.7 + milk * (0.42 + 0.3 * facing) + vec3(0.1), uLight);
+  // Specular: a crisp glint plus a faint broad sheen (a wide single lobe smears into a blotch).
   vec3 L = normalize(vec3(-0.45, 0.75, 0.55));
   vec3 H = normalize(L + V);
   float s = max(dot(N, H), 0.0);
-  float s2 = s * s; float s4 = s2 * s2; float s8 = s4 * s4; float s16 = s8 * s8; float s32 = s16 * s16;
-  body += vec3(s32 * s16) * mix(0.55, 0.4, uLight);
+  body += vec3(pow(s, 180.0)) * mix(0.85, 0.7, uLight);
+  body += vec3(pow(s, 14.0)) * 0.05;
   // Light ceiling keeps bloom finite on every GPU.
   body = clamp(body, 0.0, 1.6);
   gl_FragColor = vec4(body, 1.0);

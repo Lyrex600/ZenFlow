@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { palette } from "./palette";
 import { RING_FRAGMENT, RING_VERTEX } from "./shaders";
+import { useBlending, useShaderMaterial } from "./useShaderMaterial";
 
 /**
  * Each ring sways around its own tilt with sine easing (no linear spin) while a
@@ -27,6 +28,16 @@ function RingMesh({ ring, index, light, animate, segments }: { ring: (typeof RIN
     [index],
   );
 
+  const material = useShaderMaterial({
+    vertexShader: RING_VERTEX,
+    fragmentShader: RING_FRAGMENT,
+    uniforms,
+    transparent: true,
+    depthWrite: false,
+    toneMapped: false,
+  });
+  useBlending(material, light ? THREE.NormalBlending : THREE.AdditiveBlending);
+
   useEffect(() => {
     const a = colors.a.clone();
     const b = colors.b.clone();
@@ -49,17 +60,8 @@ function RingMesh({ ring, index, light, animate, segments }: { ring: (typeof RIN
   });
 
   return (
-    <mesh ref={mesh} rotation={ring.tilt as unknown as [number, number, number]}>
+    <mesh ref={mesh} rotation={ring.tilt as unknown as [number, number, number]} material={material}>
       <torusGeometry args={[ring.r, ring.tube, 8, segments]} />
-      <shaderMaterial
-        vertexShader={RING_VERTEX}
-        fragmentShader={RING_FRAGMENT}
-        uniforms={uniforms}
-        transparent
-        depthWrite={false}
-        toneMapped={false}
-        blending={light ? THREE.NormalBlending : THREE.AdditiveBlending}
-      />
     </mesh>
   );
 }

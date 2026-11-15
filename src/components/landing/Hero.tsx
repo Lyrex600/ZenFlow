@@ -1,11 +1,12 @@
 import { ClientOnly, Link } from "@tanstack/react-router";
-import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { ArrowRight, Lock } from "lucide-react";
 import { lazy } from "react";
 import { Magnetic } from "@/components/fx/Magnetic";
 import { usePrefs } from "@/components/fx/PrefsProvider";
 import { SceneHost } from "@/components/three/SceneHost";
 import { Button } from "@/components/ui/button";
+import { useSafeReducedMotion } from "@/hooks/use-safe-reduced-motion";
 
 const HeroScene = lazy(() => import("@/components/three/HeroScene"));
 
@@ -24,7 +25,7 @@ const item = {
 
 export function Hero() {
   const { prefs } = usePrefs();
-  const reduce = useReducedMotion();
+  const reduce = useSafeReducedMotion();
   const { scrollY } = useScroll();
   const y = useTransform(scrollY, [0, 700], [0, 140]);
   const opacity = useTransform(scrollY, [0, 520], [1, 0]);
