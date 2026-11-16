@@ -127,7 +127,7 @@ void main(){
   vec3 L = normalize(vec3(-0.45, 0.75, 0.55));
   vec3 H = normalize(L + V);
   float s = max(dot(N, H), 0.0);
-  body += vec3(pow(s, 180.0)) * mix(0.85, 0.7, uLight);
+  body += vec3(pow(s, 180.0)) * mix(0.85, 0.5, uLight);
   body += vec3(pow(s, 14.0)) * 0.05;
   // Light ceiling keeps bloom finite on every GPU.
   body = clamp(body, 0.0, 1.6);

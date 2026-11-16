@@ -55,6 +55,8 @@ function Rig({ animate, light, detail, layers }: { animate: boolean; light: bool
   useFrame((_, delta) => {
     const dt = Math.min(delta, 0.05);
     const sm = smooth.current;
+    // Static tier renders on demand only, so snap to targets instead of easing.
+    const follow = (c: number, t: number) => (animate ? damp(c, t, FOLLOW_DAMP, dt) : t);
     const rawScroll = Math.min(1, Math.max(0, window.scrollY / Math.max(1, window.innerHeight)));
     sm.scroll = damp(sm.scroll, rawScroll, SCROLL_DAMP, dt);
     if (animate) {
@@ -66,7 +68,7 @@ function Rig({ animate, light, detail, layers }: { animate: boolean; light: bool
     const e = p * p * (3 - 2 * p);
     morph.current = REST_MORPH + e * SCROLL_MORPH;
 
-    camera.position.z = damp(camera.position.z, 5.4 + e * 2.6, FOLLOW_DAMP, dt);
+    camera.position.z = follow(camera.position.z, 5.4 + e * 2.6);
     camera.position.x = damp(camera.position.x, sm.px * CAM_PARALLAX, FOLLOW_DAMP, dt);
     camera.position.y = damp(camera.position.y, sm.py * CAM_PARALLAX * 0.6, FOLLOW_DAMP, dt);
     camera.lookAt(0, 0, 0);
@@ -75,10 +77,10 @@ function Rig({ animate, light, detail, layers }: { animate: boolean; light: bool
     if (g) {
       const wide = width >= 1024;
       // Narrow screens: shrink the orb to fit the width and lift it above the hero copy.
-      const fit = wide ? 1 : THREE.MathUtils.clamp((width / Math.max(1, height)) * 0.95, 0.44, 0.8);
-      g.scale.setScalar(damp(g.scale.x, fit, FOLLOW_DAMP, dt));
-      g.position.x = damp(g.position.x, wide ? 1.75 : 0, FOLLOW_DAMP, dt);
-      g.position.y = damp(g.position.y, (wide ? 0 : HALF_H * 0.6) + e * 0.6, FOLLOW_DAMP, dt);
+      const fit = wide ? 1 : THREE.MathUtils.clamp((width / Math.max(1, height)) * 0.88, 0.4, 0.8);
+      g.scale.setScalar(follow(g.scale.x, fit));
+      g.position.x = follow(g.position.x, wide ? 1.75 : 0);
+      g.position.y = follow(g.position.y, (wide ? 0 : HALF_H * 0.64) + e * 0.6);
       g.rotation.x = damp(g.rotation.x, -sm.py * TILT_X, FOLLOW_DAMP, dt);
       g.rotation.y = damp(g.rotation.y, sm.px * TILT_Y, FOLLOW_DAMP, dt);
     }

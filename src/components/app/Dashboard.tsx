@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
-import { BarChart3, Bell, Headphones, Lock, LogOut, Settings, Timer, UserRound, Wind, type LucideIcon } from "lucide-react";
+import { BarChart3, Bell, Headphones, Lock, LogOut, Settings, Shield, Timer, UserRound, Wind, type LucideIcon } from "lucide-react";
 import { LogoMark, Logo } from "@/components/brand/Logo";
 import { ThemeToggle } from "@/components/fx/ThemeToggle";
 import { Button } from "@/components/ui/button";
@@ -60,7 +60,7 @@ function PomodoroBadge({ onOpen }: { onOpen: () => void }) {
 function Shell({ tab, onTab }: { tab: TabId; onTab: (t: TabId) => void }) {
   const { data } = useApp();
   const { lock } = useVault();
-  const { signOut } = useAccount();
+  const { signOut, profile } = useAccount();
   const logout = async () => {
     await lock("manual");
     await signOut();
@@ -92,6 +92,13 @@ function Shell({ tab, onTab }: { tab: TabId; onTab: (t: TabId) => void }) {
             );
           })}
         </nav>
+        {profile?.is_admin && (
+          <Button asChild variant="glass" className="mb-2 justify-start">
+            <Link to="/admin">
+              <Shield /> Administration
+            </Link>
+          </Button>
+        )}
         <div className="mt-4 flex items-center gap-2 border-t border-border pt-4">
           <ThemeToggle />
           <Button variant="glass" className="flex-1" onClick={() => void lock("manual")}>
@@ -110,6 +117,13 @@ function Shell({ tab, onTab }: { tab: TabId; onTab: (t: TabId) => void }) {
         </Link>
         <div className="flex items-center gap-1">
           <PomodoroBadge onOpen={() => onTab("focus")} />
+          {profile?.is_admin && (
+            <Button asChild variant="ghost" size="icon">
+              <Link to="/admin" aria-label="Administration" title="Administration">
+                <Shield />
+              </Link>
+            </Button>
+          )}
           <ThemeToggle />
           <Button variant="ghost" size="icon" onClick={() => void lock("manual")} aria-label="Verrouiller">
             <Lock />

@@ -153,7 +153,7 @@ export function ProfileTab() {
           </form>
         </Panel>
 
-        <Panel title="Exporter mes données" description="La sauvegarde chiffrée se réimporte sur n'importe quel navigateur avec ta phrase secrète. Le JSON est lisible par tous : garde-le en lieu sûr.">
+        <Panel title="Exporter mes données" description="La sauvegarde chiffrée se réimporte sur n'importe quel navigateur avec ton mot de passe. Le JSON est lisible par tous : garde-le en lieu sûr.">
           <ExportButtons />
         </Panel>
 

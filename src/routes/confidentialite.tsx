@@ -22,7 +22,7 @@ export const Route = createFileRoute("/confidentialite")({
 
 const POINTS = [
   { t: "Où sont mes données ?", d: "Tes données de pratique (statistiques, alarmes, réglages) restent dans ton navigateur, chiffrées. Notre serveur conserve uniquement ton compte : e-mail, prénom, date d'inscription, et pour la sécurité de ton compte l'adresse IP, le navigateur et l'horodatage de tes connexions. Les administrateurs voient ces informations, jamais ton mot de passe." },
-  { t: "Comment sont-elles chiffrées ?", d: "AES-256-GCM via la Web Crypto API. La clé est dérivée de ta phrase secrète avec PBKDF2-SHA256 (600 000 itérations, sel aléatoire de 16 octets). Chaque écriture utilise un nouveau vecteur d'initialisation aléatoire de 12 octets." },
+  { t: "Comment sont-elles chiffrées ?", d: "AES-256-GCM via la Web Crypto API. La clé est dérivée de ton mot de passe avec PBKDF2-SHA256 (600 000 itérations, sel aléatoire de 16 octets). Chaque écriture utilise un nouveau vecteur d'initialisation aléatoire de 12 octets." },
   { t: "Et mon mot de passe ?", d: "Le serveur de comptes le stocke uniquement sous forme d'empreinte (bcrypt), jamais en clair ; personne ne peut le lire, administrateurs compris. Dans ton navigateur, il sert à dériver la clé de chiffrement locale, qui reste en mémoire et est effacée au verrouillage." },
   { t: "Que reste-t-il en clair ?", d: "Tes préférences d'affichage (thème, curseur) et le compteur d'échecs de connexion, pour que le délai de sécurité survive à un rechargement. Rien de personnel." },
   { t: "Mesure d'audience, cookies ?", d: "Aucune mesure d'audience ni traqueur. La session de compte est gardée dans ton navigateur. Les polices sont servies depuis le site lui-même." },

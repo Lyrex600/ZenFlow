@@ -77,8 +77,8 @@ function SecurityCenter() {
           {vault.keyExtractable === false ? " non exportable, " : " "}en mémoire uniquement.
           {vault.lastWrite && <> Dernière écriture chiffrée : {time.format(vault.lastWrite)}.</>}
         </Check>
-        <Check ok title="Phrase secrète jamais stockée">
-          Le déverrouillage réussit uniquement si le coffre se déchiffre. Aucune empreinte, aucun envoi réseau.
+        <Check ok title="Mot de passe jamais stocké en clair">
+          Le serveur de comptes n'en garde qu'une empreinte (bcrypt). Le coffre local se déchiffre uniquement avec une clé dérivée en mémoire.
         </Check>
         <Check ok title="Verrouillage automatique">
           Après {data.settings.autoLockMin} min d'inactivité (suspendu pendant une session en cours)
@@ -127,7 +127,7 @@ function SecurityCenter() {
       </div>
       <p className="mt-6 flex items-start gap-2 text-sm text-muted-foreground">
         <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-warn" aria-hidden />
-        Aucune récupération n'est possible sans ta phrase secrète. Exporte une sauvegarde chiffrée régulièrement.
+        Aucune récupération n'est possible sans ton mot de passe. Exporte une sauvegarde chiffrée régulièrement.
       </p>
     </Panel>
   );

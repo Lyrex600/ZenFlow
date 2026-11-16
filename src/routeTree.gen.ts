@@ -10,12 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as ConfidentialiteRouteImport } from './routes/confidentialite'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppRoute = AppRouteImport.update({
@@ -31,30 +37,34 @@ const ConfidentialiteRoute = ConfidentialiteRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/app': typeof AppRoute
   '/confidentialite': typeof ConfidentialiteRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/app': typeof AppRoute
   '/confidentialite': typeof ConfidentialiteRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/app': typeof AppRoute
   '/confidentialite': typeof ConfidentialiteRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/app' | '/confidentialite'
+  fullPaths: '/' | '/admin' | '/app' | '/confidentialite'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/app' | '/confidentialite'
-  id: '__root__' | '/' | '/app' | '/confidentialite'
+  to: '/' | '/admin' | '/app' | '/confidentialite'
+  id: '__root__' | '/' | '/admin' | '/app' | '/confidentialite'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
   AppRoute: typeof AppRoute
   ConfidentialiteRoute: typeof ConfidentialiteRoute
 }
@@ -66,6 +76,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app': {
@@ -87,6 +104,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
   AppRoute: AppRoute,
   ConfidentialiteRoute: ConfidentialiteRoute,
 }
