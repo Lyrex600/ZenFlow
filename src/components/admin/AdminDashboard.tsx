@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
-import { ArrowDown, ArrowUp, ArrowUpDown, Ban, Loader2, LogOut, RefreshCw, Search, ShieldAlert, ShieldCheck, UserCheck, Users, Wifi } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Ban, CloudOff, Loader2, LogOut, RefreshCw, Search, ShieldCheck, UserCheck, Users, Wifi } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Logo } from "@/components/brand/Logo";
@@ -74,13 +74,18 @@ function StatusDot({ online, disabled }: { online: boolean; disabled: boolean })
 
 export function AdminDashboard() {
   const { signOut } = useAccount();
+  const navigate = useNavigate();
+  const leave = async () => {
+    await signOut();
+    void navigate({ to: "/", replace: true });
+  };
   const fetchOverview = useServerFn(getAdminOverview);
   const overview = useQuery({ queryKey: ["admin", "overview"], queryFn: () => fetchOverview(), refetchInterval: 15_000 });
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>({ key: "last_login_at", dir: "desc" });
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const data = overview.data?.allowed ? overview.data : null;
+  const data = overview.data ?? null;
   const now = data?.now ?? Date.now();
 
   const rows = useMemo(() => {
@@ -115,23 +120,18 @@ export function AdminDashboard() {
   }
 
   if (overview.isError || !data) {
-    const denied = !overview.isError;
     return (
       <main className="flex min-h-[100svh] items-center justify-center px-4">
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="glass-strong w-full max-w-md rounded-[2rem] p-8 text-center">
-          <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-danger/15 text-danger">
-            <ShieldAlert aria-hidden />
+          <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-warn/15 text-warn">
+            <CloudOff aria-hidden />
           </div>
-          <h1 className="text-2xl font-semibold">{denied ? "Accès refusé" : "Chargement impossible"}</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {denied ? "Cet espace est réservé aux administrateurs. Ton compte n'a pas ces droits." : "Les comptes n'ont pas pu être chargés. Réessaie dans un instant."}
-          </p>
+          <h1 className="text-2xl font-semibold">Chargement impossible</h1>
+          <p className="mt-2 text-sm text-muted-foreground">Les comptes n'ont pas pu être chargés. Réessaie dans un instant.</p>
           <div className="mt-6 flex flex-wrap justify-center gap-2">
-            {!denied && (
-              <Button variant="glass" onClick={() => void overview.refetch()}>
-                <RefreshCw /> Réessayer
-              </Button>
-            )}
+            <Button variant="glass" onClick={() => void overview.refetch()}>
+              <RefreshCw /> Réessayer
+            </Button>
             <Button asChild variant="hero">
               <Link to="/app">Retour à mon espace</Link>
             </Button>
@@ -159,7 +159,7 @@ export function AdminDashboard() {
               <Link to="/app">Mon espace</Link>
             </Button>
             <ThemeToggle />
-            <Button variant="ghost" size="icon" onClick={() => void signOut()} aria-label="Se déconnecter" title="Se déconnecter">
+            <Button variant="ghost" size="icon" onClick={() => void leave()} aria-label="Se déconnecter" title="Se déconnecter">
               <LogOut />
             </Button>
           </div>

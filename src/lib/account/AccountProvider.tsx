@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { EMPTY_LOCKOUT, readLockout, registerFailure, remainingLockMs, writeLockout, type LockoutState } from "@/lib/security/lockout";
 import { deleteMyAccount, recordLogin } from "./account.functions";
+import { clearAdminCookie, syncAdminCookie } from "./admin-session.functions";
 
 export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 type Result = { ok: true } | { ok: false; error: string };
@@ -48,7 +49,10 @@ export function AccountProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setLockout(readLockout());
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => setSession(s));
+    const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
+      setSession(s);
+      if (event === "SIGNED_OUT") void clearAdminCookie().catch(() => undefined);
+    });
     void supabase.auth.getSession().then(({ data }) => setSession(data.session));
     return () => sub.subscription.unsubscribe();
   }, []);
@@ -71,6 +75,14 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     }
     void loadProfile(user.id);
   }, [user, loadProfile]);
+
+  // Admins only: keep the HttpOnly admin-gate cookie in step with the current access token,
+  // so a full page load of the admin area can be verified on the server.
+  const isAdmin = profile?.is_admin === true;
+  const accessToken = session?.access_token;
+  useEffect(() => {
+    if (isAdmin && accessToken) void syncAdminCookie().catch(() => undefined);
+  }, [isAdmin, accessToken]);
 
   // Online status heartbeat (visible to admins only): sent while the tab is visible,
   // focused and used in the last minute. Admins treat >60 s without a beat as offline.

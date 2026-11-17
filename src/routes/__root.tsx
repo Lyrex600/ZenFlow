@@ -22,7 +22,21 @@ import { Toaster } from "@/components/ui/sonner";
 import { THEME_BOOT_SCRIPT } from "@/lib/prefs";
 import { CSP_META } from "@/lib/security/headers";
 
+// A full page load is checked against a short-lived cookie; when it has expired the server
+// answers 404 even for a valid session. Retry once in the browser, where the fresh token is sent.
+const notFoundRetried = new Set<string>();
+
 function NotFoundComponent() {
+  const router = useRouter();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  useEffect(() => {
+    if (notFoundRetried.has(pathname)) return;
+    notFoundRetried.add(pathname);
+    void import("@/integrations/supabase/client").then(async ({ supabase }) => {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) void router.invalidate();
+    });
+  }, [pathname, router]);
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
       <div className="glass max-w-md rounded-3xl p-10 text-center">

@@ -8,6 +8,13 @@
       "when": 1794553190416,
       "tag": "0000_accounts_profiles_login_events",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1794907182311,
+      "tag": "0001_lock_down_profile_privileges",
+      "breakpoints": true
     }
   ]
 }

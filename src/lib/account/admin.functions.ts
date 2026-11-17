@@ -1,3 +1,4 @@
+import { notFound } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -23,15 +24,15 @@ export interface LoginEventRow {
 
 /**
  * Admin overview. The admin check runs on the server with the caller's own
- * token (RLS applies), so a non-admin gets `allowed: false` and no data.
+ * token (RLS applies); anyone else gets the same "not found" as a missing page.
  * Never selects anything password-related: the account server keeps those
  * out of the app's tables entirely.
  */
 export const getAdminOverview = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<{ allowed: false } | { allowed: true; now: number; selfId: string; users: AdminUserRow[] }> => {
-    const { data: isAdmin, error } = await context.supabase.rpc("is_admin", { uid: context.userId });
-    if (error || isAdmin !== true) return { allowed: false };
+  .handler(async ({ context }): Promise<{ now: number; selfId: string; users: AdminUserRow[] }> => {
+    const { isActiveAdmin } = await import("./admin-session.server");
+    if (!(await isActiveAdmin(context.supabase, context.userId))) throw notFound();
 
     const { data, error: listError } = await context.supabase.rpc("admin_user_overview");
     if (listError) {
@@ -49,16 +50,16 @@ export const getAdminOverview = createServerFn({ method: "POST" })
       last_login_at: u.last_login_at ?? null,
       last_ip: u.last_ip ?? null,
     }));
-    return { allowed: true, now: Date.now(), selfId: context.userId, users };
+    return { now: Date.now(), selfId: context.userId, users };
   });
 
 /** Admin only: the 50 most recent sign-ins (IP, user agent, time) for one account. */
 export const getLoginHistory = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ userId: z.string().uuid() }).parse(input))
+  .validator((input: unknown) => z.object({ userId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }): Promise<LoginEventRow[]> => {
-    const { data: isAdmin, error } = await context.supabase.rpc("is_admin", { uid: context.userId });
-    if (error || isAdmin !== true) throw new Error("Accès refusé");
+    const { isActiveAdmin } = await import("./admin-session.server");
+    if (!(await isActiveAdmin(context.supabase, context.userId))) throw notFound();
 
     const { data: rows, error: listError } = await context.supabase
       .from("login_events")

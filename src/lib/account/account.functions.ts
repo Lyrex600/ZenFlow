@@ -1,3 +1,4 @@
+import { notFound } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeader, getRequestIP } from "@tanstack/react-start/server";
 import { z } from "zod";
@@ -37,10 +38,10 @@ export const recordLogin = createServerFn({ method: "POST" })
 /** Admin only: disable (ban) or re-enable an account. Verified server-side. */
 export const setUserDisabled = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ userId: z.string().uuid(), disabled: z.boolean() }).parse(input))
+  .validator((input: unknown) => z.object({ userId: z.string().uuid(), disabled: z.boolean() }).parse(input))
   .handler(async ({ data, context }) => {
-    const { data: isAdmin, error } = await context.supabase.rpc("is_admin", { uid: context.userId });
-    if (error || isAdmin !== true) throw new Error("Accès refusé");
+    const { isActiveAdmin } = await import("./admin-session.server");
+    if (!(await isActiveAdmin(context.supabase, context.userId))) throw notFound();
     if (data.userId === context.userId) throw new Error("Tu ne peux pas désactiver ton propre compte.");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
